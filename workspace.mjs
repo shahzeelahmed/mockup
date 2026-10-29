@@ -4,7 +4,11 @@ import path from 'node:path'
 
 export const statuses = ['exploring', 'selected', 'superseded', 'implemented']
 export function readRounds(root) {
-  return fs.readdirSync(path.join(root, 'mockups'), { withFileTypes: true })
+  const directory = path.join(root, 'mockups')
+
+  if (!fs.existsSync(directory)) return []
+
+  return fs.readdirSync(directory, { withFileTypes: true })
     .filter(entry => entry.isDirectory() && fs.existsSync(path.join(root, 'mockups', entry.name, 'Mockup.vue')))
     .map(entry => readRound(root, entry.name))
 }
@@ -31,7 +35,14 @@ export function initializeMetadata(root) {
   }
 }
 export function writeGallery(root) {
-  const template = fs.readFileSync(path.join(root, 'gallery.html'), 'utf8')
+  const templateFile = path.join(root, 'gallery.html')
+
+  if (!fs.existsSync(templateFile)) return false
+
+  const template = fs.readFileSync(templateFile, 'utf8')
   const data = JSON.stringify(readRounds(root)).replaceAll('<', '\\u003c')
+  fs.mkdirSync(path.join(root, 'mockups'), { recursive: true })
   fs.writeFileSync(path.join(root, 'mockups', 'index.html'), template.replace('/* WORKSPACE_DATA */ []', () => data).replace('/* INSPOS_DATA */ []', () => JSON.stringify(readInspos(root)).replaceAll('<', '\\u003c')))
+
+  return true
 }

@@ -33,5 +33,5 @@ if (command === 'inspo') {
     save(slug, { ...JSON.parse(fs.readFileSync(file, 'utf8')), status: value })
   }
 } else if (command !== 'index') throw new Error('Usage: bun manage.mjs index | fork <slug> <new-slug> | status <slug> <status> | inspo <slug> <metadata.json>')
-writeGallery(root)
-console.log('Workspace updated')
+if (writeGallery(root)) console.log('Workspace updated')
+else console.log('Workspace updated; gallery.html missing, run bun build-gallery.mjs to build the gallery')
