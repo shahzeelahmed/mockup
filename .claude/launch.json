@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frappe-mockup",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["dev.mjs", "agent-home-v9"],
+      "port": 4818
+    }
+  ]
+}
