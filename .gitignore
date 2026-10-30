@@ -10,3 +10,5 @@ gallery-v1.html
 .vite-cache/
 .trash/
 *.d.ts
+mockups/design-workspace-v1/*.png
+mockups/design-workspace-v1/*.jpg
