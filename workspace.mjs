@@ -22,13 +22,14 @@ function readRound(root, slug) {
     objective: '', feedback: '', selectedVariant: '', sources: [], variants: [], parent: null,
     ...metadata, slug, built: fs.existsSync(path.join(dir, 'mockup.html')),
     customBuilder: fs.existsSync(path.join(dir, 'build.mjs')),
+    createdAt: fs.statSync(dir).birthtimeMs,
     thumbnail: fs.existsSync(path.join(dir, 'thumbnail.png')) }
 }
 export function initializeMetadata(root) {
   for (const round of readRounds(root)) {
     const file = path.join(root, 'mockups', round.slug, 'design.json')
     if (fs.existsSync(file)) continue
-    const { slug, built, customBuilder, thumbnail, ...metadata } = round
+    const { slug, built, customBuilder, thumbnail, createdAt, ...metadata } = round
     metadata.parent = readRounds(root).filter(item => item.project === round.project && item.version < round.version)
       .sort((a, b) => b.version - a.version)[0]?.slug || null
     fs.writeFileSync(file, JSON.stringify(metadata, null, 2) + '\n')
@@ -45,4 +46,18 @@ export function writeGallery(root) {
   fs.writeFileSync(path.join(root, 'mockups', 'index.html'), template.replace('/* WORKSPACE_DATA */ []', () => data).replace('/* INSPOS_DATA */ []', () => JSON.stringify(readInspos(root)).replaceAll('<', '\\u003c')))
 
   return true
+}
+
+export const trashRound = (root, slug) => {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug || '')) throw new Error('Invalid slug')
+  if (slug === 'design-workspace-v1') throw new Error('The gallery itself cannot be deleted')
+
+  const source = path.join(root, 'mockups', slug)
+
+  if (!fs.existsSync(path.join(source, 'Mockup.vue'))) throw new Error('Unknown mockup')
+
+  const trash = path.join(root, '.trash')
+
+  fs.mkdirSync(trash, { recursive: true })
+  fs.renameSync(source, path.join(trash, `${slug}-${Date.now()}`))
 }

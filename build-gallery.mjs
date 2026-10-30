@@ -5,6 +5,9 @@ import { readInspos } from './inspos.mjs'
 
 const root = import.meta.dirname
 const round = path.join(root, 'mockups/design-workspace-v1')
+
+if (!fs.existsSync(path.join(round, 'Mockup.vue'))) throw new Error('Gallery source missing: mockups/design-workspace-v1/Mockup.vue')
+
 fs.writeFileSync(path.join(round, 'snapshot.json'), JSON.stringify({
   rounds: readRounds(root), inspos: readInspos(root),
 }, null, 2))

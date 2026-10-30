@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import { saveInspo } from './inspos.mjs'
 import path from 'node:path'
-import { initializeMetadata, writeGallery, readRounds, statuses } from './workspace.mjs'
+import { initializeMetadata, writeGallery, readRounds, statuses, trashRound } from './workspace.mjs'
 const root = import.meta.dirname
 const [command, slug, value] = process.argv.slice(2)
 const validSlug = input => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input || '')
@@ -14,7 +14,7 @@ function forkRound(source, target) {
   if (fs.existsSync(destination)) throw new Error('Destination already exists')
   fs.cpSync(path.join(root, 'mockups', source.slug), destination, { recursive: true,
     filter: file => !['mockup.html', 'thumbnail.png'].includes(path.basename(file)) })
-  const { slug, built, customBuilder, thumbnail, ...metadata } = source
+  const { slug, built, customBuilder, thumbnail, createdAt, ...metadata } = source
   save(target, { ...metadata, parent: slug, version: source.version + 1,
     status: 'exploring', objective: '', feedback: '', selectedVariant: '' })
 }
@@ -32,6 +32,7 @@ if (command === 'inspo') {
     const file = path.join(root, 'mockups', slug, 'design.json')
     save(slug, { ...JSON.parse(fs.readFileSync(file, 'utf8')), status: value })
   }
-} else if (command !== 'index') throw new Error('Usage: bun manage.mjs index | fork <slug> <new-slug> | status <slug> <status> | inspo <slug> <metadata.json>')
+} else if (command === 'delete') trashRound(root, slug)
+else if (command !== 'index') throw new Error('Usage: bun manage.mjs index | fork <slug> <new-slug> | status <slug> <status> | inspo <slug> <metadata.json> | delete <slug>')
 if (writeGallery(root)) console.log('Workspace updated')
-else console.log('Workspace updated; gallery.html missing, run bun build-gallery.mjs to build the gallery')
+else console.log('Workspace updated; no gallery.html, so the gallery was not written')

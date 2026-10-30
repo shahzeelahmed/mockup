@@ -2,7 +2,7 @@ import { createServer } from 'vite'
 import fs from 'node:fs'
 import path from 'node:path'
 import { mockupConfig } from './config.mjs'
-import { writeGallery } from './workspace.mjs'
+import { trashRound, writeGallery } from './workspace.mjs'
 const root = import.meta.dirname
 const slug = process.argv[2]
 if (!slug) throw new Error('Usage: bun dev.mjs <slug>')
@@ -13,7 +13,23 @@ config.optimizeDeps = { entries: ['index.html'] }
 config.plugins.push({ name: 'workspace-gallery', configureServer(server) {
   server.middlewares.use((request, response, next) => {
     const pathname = new URL(request.url, 'http://localhost').pathname
+    if (pathname === '/mockups') {
+      response.statusCode = 301
+      response.setHeader('Location', '/mockups/')
+      return response.end()
+    }
     if (!pathname.startsWith('/mockups/')) return next()
+    if (request.method === 'DELETE' && pathname.startsWith('/mockups/api/rounds/')) {
+      try {
+        trashRound(root, decodeURIComponent(pathname.slice('/mockups/api/rounds/'.length)))
+        writeGallery(root)
+        response.statusCode = 204
+        return response.end()
+      } catch (error) {
+        response.statusCode = 400
+        return response.end(error.message)
+      }
+    }
     const target = pathname === '/mockups/' ? 'index.html' : decodeURIComponent(pathname.slice(9))
     const file = path.resolve(root, 'mockups', target)
     if (!file.startsWith(path.join(root, 'mockups') + path.sep) || !file.endsWith('.html')) return next()

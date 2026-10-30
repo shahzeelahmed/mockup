@@ -1,6 +1,11 @@
 node_modules
 .dist/
 .DS_Store
-mockups/
+mockups/*
+!mockups/design-workspace-v1/
+mockups/design-workspace-v1/mockup.html
+mockups/design-workspace-v1/snapshot.json
 gallery.html
 gallery-v1.html
+.vite-cache/
+.trash/
