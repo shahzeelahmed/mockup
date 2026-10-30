@@ -1,38 +1,76 @@
-import fs from 'node:fs'
+import { $ } from 'bun'
+
 import { saveInspo } from './inspos.js'
-import path from 'node:path'
-import { initializeMetadata, writeGallery, readRounds, statuses, trashRound } from './workspace.js'
-const root = import.meta.dirname
-const [command, slug, value] = process.argv.slice(2)
-const validSlug = input => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input || '')
-function save(slug, metadata) {
-  fs.writeFileSync(path.join(root, 'mockups', slug, 'design.json'), JSON.stringify(metadata, null, 2) + '\n')
-}
-function forkRound(source, target) {
+import {
+  initializeMetadata,
+  listDirectories,
+  readRounds,
+  statuses,
+  trashRound,
+  validSlug,
+  writeGallery,
+  writeJson,
+} from './workspace.js'
+
+const root = import.meta.dir
+const [command, slug, value] = Bun.argv.slice(2)
+const usage =
+  'Usage: bun manage.js index | fork <slug> <new-slug> | status <slug> <status> | inspo <slug> <metadata.json> | delete <slug>'
+
+const designFile = (round) => `${root}/mockups/${round}/design.json`
+
+const forkRound = async (source, target) => {
   if (!validSlug(target)) throw new Error('Provide a kebab-case destination slug')
-  const destination = path.join(root, 'mockups', target)
-  if (fs.existsSync(destination)) throw new Error('Destination already exists')
-  fs.cpSync(path.join(root, 'mockups', source.slug), destination, { recursive: true,
-    filter: file => !['mockup.html', 'thumbnail.png'].includes(path.basename(file)) })
+
+  const destination = `${root}/mockups/${target}`
+
+  if ((await listDirectories(`${root}/mockups`, '*')).includes(target)) throw new Error('Destination already exists')
+
+  await $`cp -r ${root}/mockups/${source.slug} ${destination}`
+  await $`rm -f ${destination}/mockup.html ${destination}/thumbnail.png`
+
   const { slug, built, customBuilder, thumbnail, createdAt, ...metadata } = source
-  save(target, { ...metadata, parent: slug, version: source.version + 1,
-    status: 'exploring', objective: '', feedback: '', selectedVariant: '' })
+
+  await writeJson(designFile(target), {
+    ...metadata,
+    parent: slug,
+    version: source.version + 1,
+    status: 'exploring',
+    objective: '',
+    feedback: '',
+    selectedVariant: '',
+  })
 }
-initializeMetadata(root)
+
+const findRound = async () => {
+  if (!validSlug(slug)) throw new Error('Invalid slug')
+
+  const round = (await readRounds(root)).find((item) => item.slug === slug)
+
+  if (!round) throw new Error('Unknown mockup')
+
+  return round
+}
+
+await initializeMetadata(root)
+
 if (command === 'inspo') {
   if (!value) throw new Error('Usage: bun manage.js inspo <slug> <metadata.json>')
-  saveInspo(root, slug, JSON.parse(fs.readFileSync(value, 'utf8')))
-} else if (command === 'fork' || command === 'status') {
-  if (!validSlug(slug)) throw new Error('Invalid slug')
-  const round = readRounds(root).find(item => item.slug === slug)
-  if (!round) throw new Error('Unknown mockup')
-  if (command === 'fork') forkRound(round, value)
-  else {
-    if (!statuses.includes(value)) throw new Error('Status must be: ' + statuses.join(', '))
-    const file = path.join(root, 'mockups', slug, 'design.json')
-    save(slug, { ...JSON.parse(fs.readFileSync(file, 'utf8')), status: value })
-  }
-} else if (command === 'delete') trashRound(root, slug)
-else if (command !== 'index') throw new Error('Usage: bun manage.js index | fork <slug> <new-slug> | status <slug> <status> | inspo <slug> <metadata.json> | delete <slug>')
-if (writeGallery(root)) console.log('Workspace updated')
+
+  await saveInspo(root, slug, await Bun.file(value).json())
+} else if (command === 'fork') {
+  await forkRound(await findRound(), value)
+} else if (command === 'status') {
+  await findRound()
+
+  if (!statuses.includes(value)) throw new Error(`Status must be: ${statuses.join(', ')}`)
+
+  await writeJson(designFile(slug), { ...(await Bun.file(designFile(slug)).json()), status: value })
+} else if (command === 'delete') {
+  await trashRound(root, slug)
+} else if (command !== 'index') {
+  throw new Error(usage)
+}
+
+if (await writeGallery(root)) console.log('Workspace updated')
 else console.log('Workspace updated; no gallery.html, so the gallery was not written')

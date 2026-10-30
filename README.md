@@ -5,16 +5,16 @@ Vue mockups built with frappe-ui, plus a gallery to browse them.
 ## Run
 
 ```sh
-bun install
-bun dev.js <round>
+bun i && bun dev
 ```
 
-- Gallery: http://127.0.0.1:4818/mockups/
-- Live round: http://127.0.0.1:4818/
+Open the gallery at http://127.0.0.1:4818/mockups/.
+
+Rounds are made by the agent. Ask it for a mockup and it adds one to `mockups/`. To work on one live, pass its name: `bun dev hello-v1`, then open http://127.0.0.1:4818/.
 
 ## Rounds
 
-Each round is a folder in `mockups/` with a `Mockup.vue` and a `design.json`. Rounds are gitignored, only the gallery app is tracked.
+Each round is a folder in `mockups/`. Rounds are gitignored, only the gallery app is tracked.
 
 | Command | Does |
 | --- | --- |

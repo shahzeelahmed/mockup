@@ -1,58 +1,90 @@
-import fs from 'node:fs'
-import path from 'node:path'
+import { listDirectories, validSlug, writeJson } from './workspace.js'
 
-const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.avif'])
-export function referenceUrl(value) {
+const imageExtensions = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'avif'])
+
+export const referenceUrl = (value) => {
   const url = new URL(value)
+
   if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Reference links must use HTTP or HTTPS')
   if (url.username || url.password) throw new Error('Reference links cannot include credentials')
+
   return url.href
 }
-function normalizeTags(tags = []) {
-  if (!Array.isArray(tags) || tags.some(tag => typeof tag !== 'string')) throw new Error('Tags must be a list of strings')
-  return [...new Set(['inspos', ...tags.map(tag => tag.trim().toLowerCase()).filter(Boolean)])]
+
+const normalizeTags = (tags = []) => {
+  if (!Array.isArray(tags) || tags.some((tag) => typeof tag !== 'string')) throw new Error('Tags must be a list of strings')
+
+  return [...new Set(['inspos', ...tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean)])]
 }
-function imageSource(file) {
+
+const imageSource = async (file) => {
   if (!file) return null
-  const extension = path.extname(file).toLowerCase()
+
+  const extension = file.split('.').pop().toLowerCase()
+
   if (!imageExtensions.has(extension)) throw new Error('Use a PNG, JPEG, WebP, GIF, or AVIF image')
-  if (!fs.statSync(file).isFile()) throw new Error('Image must be a local file')
+  if (!(await Bun.file(file).exists())) throw new Error('Image must be a local file')
+
   return { file, extension }
 }
-export function saveInspo(root, slug, input) {
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug || '')) throw new Error('Use a kebab-case inspiration slug')
-  const destination = path.join(root, 'inspos', slug)
-  if (fs.existsSync(destination)) throw new Error('Inspiration already exists; choose another slug')
-  const metadata = inspoMetadata(input)
-  const image = imageSource(input.image)
-  if (!metadata.url && !image && !metadata.notes) throw new Error('Provide an image, source link, or reference notes')
-  metadata.image = image ? `reference${image.extension}` : null
-  fs.mkdirSync(destination, { recursive: true })
-  if (image) fs.copyFileSync(image.file, path.join(destination, metadata.image))
-  fs.writeFileSync(path.join(destination, 'inspo.json'), JSON.stringify(metadata, null, 2) + '\n')
-  return { ...metadata, slug }
-}
-function inspoMetadata(input) {
+
+const inspoMetadata = (input) => {
   for (const field of ['title', 'notes', 'url']) {
     if (input[field] != null && typeof input[field] !== 'string') throw new Error(`${field} must be text`)
   }
+
   if (!input.title?.trim()) throw new Error('Give the inspiration a title')
-  return { title: input.title.trim(), tags: normalizeTags(input.tags), notes: input.notes || '',
-    url: input.url ? referenceUrl(input.url) : null, createdAt: new Date().toISOString() }
+
+  return {
+    title: input.title.trim(),
+    tags: normalizeTags(input.tags),
+    notes: input.notes || '',
+    url: input.url ? referenceUrl(input.url) : null,
+    createdAt: new Date().toISOString(),
+  }
 }
-export function readInspos(root) {
-  const directory = path.join(root, 'inspos')
-  if (!fs.existsSync(directory)) return []
-  return fs.readdirSync(directory, { withFileTypes: true }).filter(entry => entry.isDirectory())
-    .filter(entry => fs.existsSync(path.join(directory, entry.name, 'inspo.json')))
-    .map(entry => readInspo(directory, entry.name))
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+
+export const saveInspo = async (root, slug, input) => {
+  if (!validSlug(slug)) throw new Error('Use a kebab-case inspiration slug')
+
+  const destination = `${root}/inspos/${slug}`
+
+  if ((await listDirectories(`${root}/inspos`, '*')).includes(slug)) {
+    throw new Error('Inspiration already exists; choose another slug')
+  }
+
+  const metadata = inspoMetadata(input)
+  const image = await imageSource(input.image)
+
+  if (!metadata.url && !image && !metadata.notes) throw new Error('Provide an image, source link, or reference notes')
+
+  metadata.image = image ? `reference.${image.extension}` : null
+
+  if (image) await Bun.write(`${destination}/${metadata.image}`, Bun.file(image.file))
+  await writeJson(`${destination}/inspo.json`, metadata)
+
+  return { ...metadata, slug }
 }
-function readInspo(directory, slug) {
-  const data = JSON.parse(fs.readFileSync(path.join(directory, slug, 'inspo.json'), 'utf8'))
+
+const readInspo = async (directory, slug) => {
+  const data = await Bun.file(`${directory}/${slug}/inspo.json`).json()
   const image = data.image && /^reference\.(png|jpe?g|webp|gif|avif)$/.test(data.image) ? data.image : null
-  return { title: String(data.title || slug), notes: String(data.notes || ''),
-    tags: normalizeTags(data.tags), url: data.url ? referenceUrl(data.url) : null,
-    image: image && fs.existsSync(path.join(directory, slug, image)) ? image : null,
-    createdAt: String(data.createdAt || ''), slug }
+
+  return {
+    title: String(data.title || slug),
+    notes: String(data.notes || ''),
+    tags: normalizeTags(data.tags),
+    url: data.url ? referenceUrl(data.url) : null,
+    image: image && (await Bun.file(`${directory}/${slug}/${image}`).exists()) ? image : null,
+    createdAt: String(data.createdAt || ''),
+    slug,
+  }
+}
+
+export const readInspos = async (root) => {
+  const directory = `${root}/inspos`
+  const slugs = await listDirectories(directory, 'inspo.json')
+  const inspos = await Promise.all(slugs.map((slug) => readInspo(directory, slug)))
+
+  return inspos.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 }

@@ -1,26 +1,27 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import vue from '@vitejs/plugin-vue'
-import tailwindcss from 'tailwindcss'
 import autoprefixer from 'autoprefixer'
 import frappeui from 'frappe-ui/vite'
+import tailwindcss from 'tailwindcss'
 
-export function mockupConfig(root, slug) {
-const mockupDir = path.join(root, 'mockups', slug)
-if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || !fs.existsSync(path.join(mockupDir, 'Mockup.vue'))) throw new Error('Unknown mockup: ' + slug)
-const outDir = path.join(root, '.dist', slug)
+import { validSlug } from './workspace.js'
+
+export const mockupConfig = async (root, slug) => {
+const mockupDir = `${root}/mockups/${slug}`
+if (!validSlug(slug) || !(await Bun.file(`${mockupDir}/Mockup.vue`).exists())) throw new Error('Unknown mockup: ' + slug)
+const outDir = `${root}/.dist/${slug}`
 
 // optional mockups/<slug>/aliases.json: { "import/path": "file relative to the mockup dir" }
-function extraAliases() {
-  const file = path.join(mockupDir, 'aliases.json')
-  if (!fs.existsSync(file)) return []
-  const map = JSON.parse(fs.readFileSync(file, 'utf8'))
+const extraAliases = async () => {
+  const file = Bun.file(`${mockupDir}/aliases.json`)
+  if (!(await file.exists())) return []
+  const map = await file.json()
   // keys wrapped in ^...$ match the import path exactly (so `^frappe-ui$` leaves `frappe-ui/style.css` alone)
   return Object.entries(map).map(([k, v]) => ({
     find: k.startsWith('^') ? new RegExp(k) : k,
-    replacement: path.isAbsolute(v) ? v : path.join(mockupDir, v),
+    replacement: v.startsWith('/') ? v : `${mockupDir}/${v}`,
   }))
 }
+const aliases = await extraAliases()
 process.env.MOCKUP_DIR = mockupDir
 
 return {
@@ -41,14 +42,14 @@ return {
   resolve: {
     alias: [
       { find: '@mockup', replacement: mockupDir },
-      ...extraAliases(),
+      ...aliases,
     ],
     dedupe: ['vue', 'frappe-ui', 'reka-ui', '@vueuse/core'],
   },
   css: {
     postcss: {
       plugins: [
-        tailwindcss({ config: path.join(root, 'tailwind.config.js') }),
+        tailwindcss({ config: `${root}/tailwind.config.js` }),
         autoprefixer(),
       ],
     },

@@ -1,33 +1,41 @@
+import { build } from 'vite'
+
 import { mockupConfig } from './config.js'
 import { writeGallery } from './workspace.js'
-import fs from 'node:fs'
-import path from 'node:path'
-import { build } from 'vite'
-const root = import.meta.dirname
-const slug = process.argv[2]
-const mockupDir = path.join(root, 'mockups', slug ?? '')
 
-if (!slug || !fs.existsSync(path.join(mockupDir, 'Mockup.vue'))) {
-  console.error(`Usage: bun build.js <slug>  (needs mockups/<slug>/Mockup.vue)`)
+const root = import.meta.dir
+const slug = Bun.argv[2]
+const mockupDir = `${root}/mockups/${slug}`
+
+if (!slug || !(await Bun.file(`${mockupDir}/Mockup.vue`).exists())) {
+  console.error('Usage: bun build.js <slug>  (needs mockups/<slug>/Mockup.vue)')
   process.exit(1)
 }
 
-await build(mockupConfig(root, slug))
-const outDir = path.join(root, '.dist', slug)
+await build(await mockupConfig(root, slug))
 
-let html = fs.readFileSync(path.join(outDir, 'index.html'), 'utf8')
-const read = (src) => fs.readFileSync(path.join(outDir, src.replace(/^\.?\//, '')), 'utf8')
-const readCss = read
+const outDir = `${root}/.dist/${slug}`
+const read = (src) => Bun.file(`${outDir}/${src.replace(/^\.?\//, '')}`).text()
 
-html = html
-  .replace(/<link rel="stylesheet"[^>]*href="([^"]+)"[^>]*>/g, (_, href) => `<style>${readCss(href)}</style>`)
-  .replace(/<script type="module"[^>]*src="([^"]+)"[^>]*><\/script>/g, (_, src) =>
-    `<script type="module">${read(src).replace(/<\/script/g, '<\\/script')}</script>`,
-  )
-  .replace('<title>Mockup</title>', `<title>${slug}</title>`)
+let html = await read('index.html')
 
-const out = path.join(mockupDir, 'mockup.html')
-fs.writeFileSync(out, html)
+for (const [tag, href] of html.matchAll(/<link rel="stylesheet"[^>]*href="([^"]+)"[^>]*>/g)) {
+  const css = await read(href)
+
+  html = html.replace(tag, () => `<style>${css}</style>`)
+}
+
+for (const [tag, src] of html.matchAll(/<script type="module"[^>]*src="([^"]+)"[^>]*><\/script>/g)) {
+  const code = (await read(src)).replace(/<\/script/g, '<\\/script')
+
+  html = html.replace(tag, () => `<script type="module">${code}</script>`)
+}
+
+html = html.replace('<title>Mockup</title>', `<title>${slug}</title>`)
+
+const out = `${mockupDir}/mockup.html`
+
+await Bun.write(out, html)
 console.log(`${out} (${Math.round(html.length / 1024)} KB)`)
 
-writeGallery(root)
+await writeGallery(root)
