@@ -3,7 +3,31 @@ import { mockupConfig } from './config.js'
 import { trashRound, writeGallery } from './workspace.js'
 const root = import.meta.dir
 const slug = Bun.argv[2] ?? 'design-workspace-v1'
-await writeGallery(root)
+const galleryDir = `${root}/mockups/design-workspace-v1`
+const gallerySource = /\/mockups\/design-workspace-v1\/[^/]+\.(vue|js|css)$/
+
+const galleryStale = async () => {
+  const built = Bun.file(`${root}/gallery.html`)
+
+  if (!(await built.exists())) return true
+
+  const sources = await Array.fromAsync(new Bun.Glob('*.{vue,js,css}').scan({ cwd: galleryDir }))
+
+  return sources.some(file => Bun.file(`${galleryDir}/${file}`).lastModified > built.lastModified)
+}
+
+const buildGallery = () => Bun.spawn(['bun', 'build-gallery.js'], { cwd: root, stdout: 'inherit', stderr: 'inherit' }).exited
+
+let galleryTimer
+
+const queueGalleryBuild = () => {
+  clearTimeout(galleryTimer)
+  galleryTimer = setTimeout(buildGallery, 300)
+}
+
+if (await galleryStale()) await buildGallery()
+else await writeGallery(root)
+
 const config = await mockupConfig(root, slug)
 config.cacheDir = `${root}/.vite-cache/${slug}`
 config.optimizeDeps = { entries: ['index.html'] }
@@ -35,6 +59,7 @@ config.plugins.push({ name: 'workspace-gallery', configureServer(server) {
     response.end(await file.bytes())
   })
   server.watcher.on('change', file => {
+    if (gallerySource.test(file)) return queueGalleryBuild()
     if (file.endsWith('/design.json') || file.endsWith('/notes.md') || file.endsWith('/inspo.json')) writeGallery(root)
   })
 } })
