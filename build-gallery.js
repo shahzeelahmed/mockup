@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { readRounds, writeGallery } from './workspace.mjs'
-import { readInspos } from './inspos.mjs'
+import { readRounds, writeGallery } from './workspace.js'
+import { readInspos } from './inspos.js'
 
 const root = import.meta.dirname
 const round = path.join(root, 'mockups/design-workspace-v1')
@@ -11,7 +11,7 @@ if (!fs.existsSync(path.join(round, 'Mockup.vue'))) throw new Error('Gallery sou
 fs.writeFileSync(path.join(round, 'snapshot.json'), JSON.stringify({
   rounds: readRounds(root), inspos: readInspos(root),
 }, null, 2))
-const build = Bun.spawn(['bun', 'build.mjs', 'design-workspace-v1'], {
+const build = Bun.spawn(['bun', 'build.js', 'design-workspace-v1'], {
   cwd: root, stdout: 'inherit', stderr: 'inherit',
 })
 if (await build.exited) throw new Error('Gallery build failed')

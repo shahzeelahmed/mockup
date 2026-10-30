@@ -6,7 +6,6 @@ import autoprefixer from 'autoprefixer'
 import frappeui from 'frappe-ui/vite'
 
 export function mockupConfig(root, slug) {
-const crmSrc = process.env.CRM_SRC_OVERRIDE || path.resolve(root, '../frappe-bench/apps/crm/frontend/src')
 const mockupDir = path.join(root, 'mockups', slug)
 if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || !fs.existsSync(path.join(mockupDir, 'Mockup.vue'))) throw new Error('Unknown mockup: ' + slug)
 const outDir = path.join(root, '.dist', slug)
@@ -23,7 +22,6 @@ function extraAliases() {
   }))
 }
 process.env.MOCKUP_DIR = mockupDir
-process.env.CRM_SRC = crmSrc
 
 return {
   root,
@@ -44,7 +42,6 @@ return {
     alias: [
       { find: '@mockup', replacement: mockupDir },
       ...extraAliases(),
-      { find: '@', replacement: crmSrc },
     ],
     dedupe: ['vue', 'frappe-ui', 'reka-ui', '@vueuse/core'],
   },

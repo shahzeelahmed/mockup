@@ -2,8 +2,8 @@ import { test, expect } from 'bun:test'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { saveInspo, readInspos } from './inspos.mjs'
-import { writeGallery } from './workspace.mjs'
+import { saveInspo, readInspos } from './inspos.js'
+import { writeGallery } from './workspace.js'
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'frappe-inspos-'))

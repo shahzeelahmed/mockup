@@ -27,7 +27,7 @@ const deleteRound = async () => {
   if (response?.ok) return location.reload()
 
   deleting.value = false
-  deleteError.value = response ? await response.text() : 'Deleting needs the dev server (bun dev.mjs).'
+  deleteError.value = response ? await response.text() : 'Deleting needs the dev server (bun dev.js).'
 }
 
 const closeDetail = () => {
@@ -135,7 +135,7 @@ const isComparing = (round) => comparing.value.some((item) => item.slug === roun
           <span class="text-base-medium text-ink-gray-7">No rounds yet</span>
 
           <p class="max-w-sm text-p-sm text-ink-gray-5">
-            Add a folder with a Mockup.vue under mockups/, then run bun manage.mjs index.
+            Add a folder with a Mockup.vue under mockups/, then run bun manage.js index.
           </p>
         </div>
 
@@ -234,7 +234,7 @@ const isComparing = (round) => comparing.value.some((item) => item.slug === roun
           />
 
           <Button v-if="detail.built" variant="solid" label="Open mockup" icon-right="lucide-arrow-up-right" :href="roundUrl(detail)" />
-          <span v-else class="text-sm text-ink-gray-5">Run bun build.mjs {{ detail.slug }} to build it</span>
+          <span v-else class="text-sm text-ink-gray-5">Run bun build.js {{ detail.slug }} to build it</span>
         </div>
       </template>
     </Dialog>

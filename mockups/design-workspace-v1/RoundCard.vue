@@ -83,7 +83,7 @@ const relative = (time) => {
 
         <div v-else class="flex size-full flex-col items-center justify-center gap-1.5">
           <span class="text-sm text-ink-gray-5">Not built yet</span>
-          <code class="text-xs text-ink-gray-4">bun build.mjs {{ round.slug }}</code>
+          <code class="text-xs text-ink-gray-4">bun build.js {{ round.slug }}</code>
         </div>
       </div>
 

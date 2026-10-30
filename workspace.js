@@ -1,5 +1,5 @@
 import fs from 'node:fs'
-import { readInspos } from './inspos.mjs'
+import { readInspos } from './inspos.js'
 import path from 'node:path'
 
 export const statuses = ['exploring', 'selected', 'superseded', 'implemented']
@@ -21,7 +21,7 @@ function readRound(root, slug) {
   return { project: base, title: base.replaceAll('-', ' '), version, status: 'exploring',
     objective: '', feedback: '', selectedVariant: '', sources: [], variants: [], parent: null,
     ...metadata, slug, built: fs.existsSync(path.join(dir, 'mockup.html')),
-    customBuilder: fs.existsSync(path.join(dir, 'build.mjs')),
+    customBuilder: fs.existsSync(path.join(dir, 'build.js')),
     createdAt: fs.statSync(dir).birthtimeMs,
     thumbnail: fs.existsSync(path.join(dir, 'thumbnail.png')) }
 }

@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { initializeMetadata, readRounds, writeGallery } from './workspace.mjs'
+import { initializeMetadata, readRounds, writeGallery } from './workspace.js'
 
 test('migration preserves notes and explicit metadata; gallery escapes embedded scripts', () => {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'frappe-workspace-'))
@@ -28,10 +28,10 @@ test('migration preserves notes and explicit metadata; gallery escapes embedded 
 test('fork keeps the parent and rejects overwrites and traversal', () => {
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'frappe-fork-'))
  try {
-  for(const name of ['manage.mjs','workspace.mjs','gallery.html','inspos.mjs'])fs.copyFileSync(path.join(import.meta.dirname,name),path.join(root,name))
+  for(const name of ['manage.js','workspace.js','gallery.html','inspos.js'])fs.copyFileSync(path.join(import.meta.dirname,name),path.join(root,name))
   const dir=path.join(root,'mockups/example');fs.mkdirSync(dir,{recursive:true})
   for(const [name,body] of Object.entries({'Mockup.vue':'<template>Hello</template>','notes.md':'Original notes','mockup.html':'Original export','thumbnail.png':'image'}))fs.writeFileSync(path.join(dir,name),body)
-  const run=(...args)=>Bun.spawnSync([process.execPath,path.join(root,'manage.mjs'),...args])
+  const run=(...args)=>Bun.spawnSync([process.execPath,path.join(root,'manage.js'),...args])
   expect(run('status','example','selected').exitCode).toBe(0)
   expect(run('fork','example','example-v2').exitCode).toBe(0)
   expect(JSON.parse(fs.readFileSync(path.join(dir,'design.json'))).status).toBe('selected')

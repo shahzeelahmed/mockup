@@ -9,3 +9,4 @@ gallery.html
 gallery-v1.html
 .vite-cache/
 .trash/
+*.d.ts

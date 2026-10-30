@@ -1,15 +1,14 @@
-import { mockupConfig } from './config.mjs'
-import { writeGallery } from './workspace.mjs'
+import { mockupConfig } from './config.js'
+import { writeGallery } from './workspace.js'
 import fs from 'node:fs'
 import path from 'node:path'
 import { build } from 'vite'
 const root = import.meta.dirname
-const crmSrc = process.env.CRM_SRC_OVERRIDE || path.resolve(root, '../frappe-bench/apps/crm/frontend/src')
 const slug = process.argv[2]
 const mockupDir = path.join(root, 'mockups', slug ?? '')
 
 if (!slug || !fs.existsSync(path.join(mockupDir, 'Mockup.vue'))) {
-  console.error(`Usage: bun build.mjs <slug>  (needs mockups/<slug>/Mockup.vue)`)
+  console.error(`Usage: bun build.js <slug>  (needs mockups/<slug>/Mockup.vue)`)
   process.exit(1)
 }
 

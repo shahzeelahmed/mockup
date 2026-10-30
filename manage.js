@@ -1,7 +1,7 @@
 import fs from 'node:fs'
-import { saveInspo } from './inspos.mjs'
+import { saveInspo } from './inspos.js'
 import path from 'node:path'
-import { initializeMetadata, writeGallery, readRounds, statuses, trashRound } from './workspace.mjs'
+import { initializeMetadata, writeGallery, readRounds, statuses, trashRound } from './workspace.js'
 const root = import.meta.dirname
 const [command, slug, value] = process.argv.slice(2)
 const validSlug = input => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input || '')
@@ -20,7 +20,7 @@ function forkRound(source, target) {
 }
 initializeMetadata(root)
 if (command === 'inspo') {
-  if (!value) throw new Error('Usage: bun manage.mjs inspo <slug> <metadata.json>')
+  if (!value) throw new Error('Usage: bun manage.js inspo <slug> <metadata.json>')
   saveInspo(root, slug, JSON.parse(fs.readFileSync(value, 'utf8')))
 } else if (command === 'fork' || command === 'status') {
   if (!validSlug(slug)) throw new Error('Invalid slug')
@@ -33,6 +33,6 @@ if (command === 'inspo') {
     save(slug, { ...JSON.parse(fs.readFileSync(file, 'utf8')), status: value })
   }
 } else if (command === 'delete') trashRound(root, slug)
-else if (command !== 'index') throw new Error('Usage: bun manage.mjs index | fork <slug> <new-slug> | status <slug> <status> | inspo <slug> <metadata.json> | delete <slug>')
+else if (command !== 'index') throw new Error('Usage: bun manage.js index | fork <slug> <new-slug> | status <slug> <status> | inspo <slug> <metadata.json> | delete <slug>')
 if (writeGallery(root)) console.log('Workspace updated')
 else console.log('Workspace updated; no gallery.html, so the gallery was not written')

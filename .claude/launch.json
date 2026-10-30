@@ -4,7 +4,7 @@
     {
       "name": "frappe-mockup",
       "runtimeExecutable": "bun",
-      "runtimeArgs": ["dev.mjs", "agent-home-v9"],
+      "runtimeArgs": ["dev.js", "agent-home-v9"],
       "port": 4818
     }
   ]
