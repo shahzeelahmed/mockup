@@ -2,11 +2,11 @@
   "project": "design-workspace",
   "title": "design workspace",
   "version": 1,
+  "parent": null,
   "status": "exploring",
-  "objective": "",
-  "feedback": "",
-  "selectedVariant": "",
-  "sources": [],
-  "variants": [],
-  "parent": null
+  "objective": "A restrained visual gallery for browsing projects, previewing the current round and comparing saved iterations.",
+  "feedback": "Keep option 1's gallery structure; follow DESIGN.md and use stock frappe-ui components.",
+  "selectedVariant": "Visual gallery, neutral refinement",
+  "sources": ["DESIGN.md", "gallery.html", "workspace.mjs"],
+  "variants": ["Visual gallery"]
 }
